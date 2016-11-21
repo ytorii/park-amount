@@ -16,25 +16,22 @@ raw_df = pd.read_csv(RAW_DATA_PATH, header=None, names=np.arange(6))
 cycle_amount_df = pd.read_csv(CYCLE_AMOUNT_PATH, header=None)
 weather_df = pd.DataFrame()
 
+print("Splitting to datetime to date and hour...")
 for i in range(raw_df.shape[0]):
-  # Parse string to date format
-  date = dt.strptime(raw_df.loc[i, 0], "%Y/%m/%d %H:%M")
-  # Selecting 'm/d' form 'y/m/d' format
-  weather_df.loc[i, 0] = str(date.strftime('%Y/%m/%d'))
-  # Selecting hour, month and weekday form 'YYYY/MM/DD' format
-  weather_df.loc[i, 1] = date.hour
+  weather_df.loc[i, 0], weather_df.loc[i, 4] = raw_df.loc[i, 0].split(" ")
 
+print("Normalizing real_value columns...")
 # Normalize real_value columns
-# Temprature, Wind-speed, Precipiation
-for j, k in [[2, 1], [3, 2], [4, 3]]:
-  weather_df[j] = zscore(raw_df[k])
+for j in [ 1, 2, 3 ]:
+  weather_df[j] = zscore(raw_df[j])
 
 # Pivot data to date x hour
-weather_df = weather_df.pivot(index=0, columns=1)
+weather_df = weather_df.pivot(index=0, columns=4)
 
-#for l in range(len(weather_df.index)):
-amount_iter = cycle_amount_df.iterrows()
 m = 0
+
+print("Appending categolized value and  label...")
+# Append oter inputs and labels after pivit
 for l in weather_df.index:
   date = dt.strptime(l, "%Y/%m/%d")
   weather_df.loc[l, 5] = date.month
@@ -43,10 +40,10 @@ for l in weather_df.index:
   weather_df.loc[l, 7] = cycle_amount_df[0][m]
   m += 1
 
-
-# Select random columns from whole input data with directed percentage.
+# Select random columns from whole input data with directed percentage
 test_df = weather_df.sample(frac=TEST_PERCENTAGE)
 train_df = weather_df.drop(test_df.index.values)
 
+# Save results as csv files
 train_df.to_csv(TRAIN_DATA_PATH, header=None)
 test_df.to_csv(TEST_DATA_PATH, header=None)

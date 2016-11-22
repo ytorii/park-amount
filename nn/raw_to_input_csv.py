@@ -21,13 +21,12 @@ def read_raw_data():
 
 def store_split_datetime(raw_data_df, weather_df):
   print("Splitting datetime to date and hour...")
-  for i in range(raw_data_df.shape[0]):
-    weather_df.loc[i,0], weather_df.loc[i,4] = raw_data_df.loc[i,0].split(" ")
-
+  # index 1, 2, 3 is used later
+  weather_df = raw_data_df[0].apply(lambda x: pd.Series(x.split(" "), index=[0,4]))
   return weather_df
   
 def store_real_values(raw_data_df, weather_df):
-  print("Normalizing real_value columns...")
+  print("Normalizing real values...")
   # Normalize real_value columns
   for j in [ 1, 2, 3 ]:
     weather_df[j] = zscore(raw_data_df[j])
@@ -40,7 +39,7 @@ def pivot_date_x_hour(weather_df):
   return weather_df.pivot(index=0, columns=4)
 
 def store_categolized_values(weather_df):
-  print("Appending categolized value...")
+  print("Appending categolized values...")
   # Append oter inputs and labels after pivot
   for l in weather_df.index:
     date = dt.strptime(l, "%Y/%m/%d")
@@ -50,14 +49,9 @@ def store_categolized_values(weather_df):
   return weather_df
 
 def store_label_values(weather_df, cycle_amount_df):
-  print("Appending label value...")
-  # Append label data
-  #n = 0
-  #for m in weather_df.index:
-  #  weather_df.loc[m, 7] = cycle_amount_df[0][n]
-  #  n += 1
+  print("Appending label values...")
+  # Reset indexes of weather_df as default interger, to match index of two dataframes
   weather_df.reset_index(drop=True, inplace=True)
-  print(weather_df.index.values)
   weather_df[7] = cycle_amount_df[0]
 
   return weather_df

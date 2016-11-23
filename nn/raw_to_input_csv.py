@@ -3,6 +3,9 @@ from datetime import datetime as dt
 import numpy as np
 import pandas as pd
 
+import concurrent.futures
+import time
+
 TEST_PERCENTAGE = 0.2
 
 RAW_DATA_PATH = "raw/raw_data.csv"
@@ -57,7 +60,7 @@ def store_label_values(weather_df, cycle_amount_df):
   return weather_df
 
 def configure_weather_df(raw_data_df, cycle_amount_df):
-  weather_df = pd.DataFrame();
+  weather_df = pd.DataFrame()
   weather_df = store_split_datetime(raw_data_df, weather_df)
   weather_df = store_real_values(raw_data_df, weather_df)
   weather_df = pivot_date_x_hour(weather_df)

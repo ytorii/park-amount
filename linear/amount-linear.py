@@ -1,11 +1,7 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import pandas as pd
 import tensorflow as tf
 
-#tf.logging.set_verbosity(tf.logging.INFO)
+tf.logging.set_verbosity(tf.logging.INFO)
 
 INPUTDATA_PATH = "input/"
 TRAIN_FILENAME = INPUTDATA_PATH + "train_data.csv"
@@ -45,18 +41,27 @@ def build_estimator():
   for col in CONTINUOUS_COLUMNS:
     feature_columns.append(tf.contrib.layers.real_valued_column(col))
 
-  #temprature = tf.contrib.layers.real_valued_column("temprature")
-  #precipitation = tf.contrib.layers.real_valued_column("precipitation")
-  #wind_speed = tf.contrib.layers.real_valued_column("wind_speed")
-
+  
   # Relevance among inputs, this shuold be derived from catagolized values.
-  #t_buckets = tf.contrib.layers.bucketized_column(temprature, boundaries=[0, 5, 10, 15, 20, 25, 30, 35, 40])
-  #p_buckets = tf.contrib.layers.bucketized_column(precipitation, boundaries=[0, 0.5, 1.0, 2.0, 3.0, 4.0])
-  #w_buckets = tf.contrib.layers.bucketized_column(wind_speed, boundaries=[0, 0.3, 0.5, 1.0, 2.0, 3.0])
-  #t_x_p_x_w = tf.contrib.layers.crossed_column([t_buckets, p_buckets, w_buckets], hash_bucket_size=int(1e6))
-  #feature_columns = [month, days, temprature, precipitation, wind_speed, t_x_p_x_w]
+  for i in range(CONTINUOUS_COLUMNS_NUM):
+    temp = 'temp%s' % (i)
+    prec = 'prec%s' % (i)
+    wind = 'wind%s' % (i)
 
-  m = tf.contrib.learn.LinearRegressor(feature_columns=feature_columns)
+    feature_columns.append(
+      tf.contrib.layers.crossed_column([
+        tf.contrib.layers.bucketized_column(tf.contrib.layers.real_valued_column(temp), boundaries=[0, 5, 10, 15, 20, 25, 30, 35, 40]),
+        tf.contrib.layers.bucketized_column(tf.contrib.layers.real_valued_column(prec), boundaries=[0, 0.5, 1.0, 2.0, 3.0, 4.0]),
+        tf.contrib.layers.bucketized_column(tf.contrib.layers.real_valued_column(wind), boundaries=[0, 0.3, 0.5, 1.0, 2.0, 3.0])
+      ], hash_bucket_size=int(1e6))
+    )
+
+  grad_opt = tf.train.GradientDescentOptimizer(learning_rate=0.01)
+  adagrad_opt = tf.train.AdagradOptimizer(learning_rate=0.1)
+  adam_opt = tf.train.AdamOptimizer(learning_rate=0.1)
+  m = tf.contrib.learn.LinearRegressor(feature_columns=feature_columns, optimizer=adam_opt, enable_centered_bias=True)
+  #m = tf.contrib.learn.LinearRegressor(feature_columns=feature_columns, optimizer=adagrad_opt, model_dir="/tmp/park_amount")
+  #m = tf.contrib.learn.LinearRegressor(feature_columns=feature_columns)
 
   return m
 
@@ -70,7 +75,6 @@ def input_fn(df):
 
   feature_cols = dict(continuous_cols)
   feature_cols.update(categorical_cols)
-  #feature_cols = dict(continuous_cols.items() + categorical_cols.items())
   label = tf.constant(df[LABEL_COLUMN].values)
 
   return feature_cols, label
@@ -89,9 +93,11 @@ def train_and_eval():
   df_train = df_train.dropna(how='any', axis=0)
   df_test = df_test.dropna(how='any', axis=0)
 
-  m = build_estimator()
-  m.fit(input_fn=lambda: input_fn(df_train), steps=1)
-  results = m.evaluate(input_fn=lambda: input_fn(df_test), steps=1)
+  model = build_estimator()
+  #validation_monitor = tf.contrib.learn.monitors.ValidationMonitor(input_fn=lambda: input_fn(df_test), every_n_steps=50)
+  #model.fit(input_fn=lambda: input_fn(df_train), steps=10000, monitors=[validation_monitor])
+  model.fit(input_fn=lambda: input_fn(df_train), steps=10000)
+  results = model.evaluate(input_fn=lambda: input_fn(df_test), steps=1)
   for key in sorted(results):
     print("%s: %s" % (key, results[key]))
 

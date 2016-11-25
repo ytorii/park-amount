@@ -37,7 +37,8 @@ class WeatherDataGenerator:
     print("Normalizing real values...")
     # Normalize real_value columns
     for j in [ 1, 2, 3 ]:
-      self.weather_data[j] = zscore(self.raw_data[j])
+      #self.weather_data[j] = zscore(self.raw_data[j], axis=0)
+      self.weather_data[j] = self.raw_data[j]
   
   def __pivot_date_x_hour(self):
     print("Pivoting columns date x hour...")

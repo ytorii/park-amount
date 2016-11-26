@@ -46,12 +46,13 @@ def build_estimator():
     feature_columns.append(tf.contrib.layers.real_valued_column(col))
 
   grad_opt = tf.train.GradientDescentOptimizer(learning_rate=0.01)
-  adagrad_opt = tf.train.AdagradOptimizer(learning_rate=0.01)
-  adam_opt = tf.train.AdamOptimizer(learning_rate=0.01)
+  adagrad_opt = tf.train.AdagradOptimizer(learning_rate=0.1)
+  adam_opt = tf.train.AdamOptimizer(learning_rate=0.001)
+  padagrad_opt = tf.train.ProximalAdagradOptimizer( learning_rate=0.1, l1_regularization_strength=0.001)
 
-  #m = tf.contrib.learn.DNNRegressor(feature_columns=feature_columns, hidden_units=[ 20, 10 ])
-  m = tf.contrib.learn.DNNRegressor(feature_columns=feature_columns, optimizer=adagrad_opt, hidden_units=[ 20, 10 ])
-  #m = tf.contrib.learn.DNNRegressor(feature_columns=feature_columns, enable_centered_bias=True, hidden_units=[ 20, 10 ])
+  #m = tf.contrib.learn.DNNRegressor(feature_columns=feature_columns, hidden_units=[ 50, 20, 10 ])
+  m = tf.contrib.learn.DNNRegressor(feature_columns=feature_columns, optimizer=adam_opt, hidden_units=[ 50, 30, 10 ])
+  #m = tf.contrib.learn.DNNRegressor(feature_columns=feature_columns, optimizer=adam_opt, enable_centered_bias=True, hidden_units=[ 50, 20 ])
 
   return m
 
@@ -84,10 +85,12 @@ def train_and_eval():
   df_test = df_test.dropna(how='any', axis=0)
 
   model = build_estimator()
-  model.fit(input_fn=lambda: input_fn(df_train), steps=100000)
-  results = model.evaluate(input_fn=lambda: input_fn(df_test), steps=1)
-  for key in sorted(results):
-    print("%s: %s" % (key, results[key]))
+  model.fit(input_fn=lambda: input_fn(df_train), steps=50000)
+  test_results = model.evaluate(input_fn=lambda: input_fn(df_test), steps=1)
+  for key in sorted(test_results):
+    print("%s: %s" % (key, test_results[key]))
+
+  
 
 def main(_):
   train_and_eval()

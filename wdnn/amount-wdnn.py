@@ -36,25 +36,42 @@ def build_estimator():
   month = tf.contrib.layers.sparse_column_with_keys(column_name="month", keys=MONTH_KEYS)
   days = tf.contrib.layers.sparse_column_with_keys(column_name="days", keys=DAYS_KEYS)
 
+  wide_columns = [ month, days ]
+
   # Catagorical values are converted into real values so that concatinating with real value columns
   m_embed = tf.contrib.layers.embedding_column(month, dimension=4)
   d_embed = tf.contrib.layers.embedding_column(days, dimension=3)
 
-  feature_columns = [ m_embed, d_embed ]
+  deep_columns = [ m_embed, d_embed ]
 
   # Inputs with real values(like 1.03, 2.3)
   for col in CONTINUOUS_COLUMNS:
-    feature_columns.append(tf.contrib.layers.real_valued_column(col))
+    deep_columns.append(tf.contrib.layers.real_valued_column(col))
 
+  # Relevance among inputs, this shuold be derived from catagolized values.
+  for i in range(CONTINUOUS_COLUMNS_NUM):
+    temp = 'temp%s' % (i)
+    #wind = 'wind%s' % (i)
+    prec = 'prec%s' % (i)
+
+    wide_columns.append(
+      tf.contrib.layers.crossed_column([
+        tf.contrib.layers.bucketized_column(tf.contrib.layers.real_valued_column(temp), boundaries=[0, 5, 10, 15, 20, 25, 30, 35, 40]),
+        #tf.contrib.layers.bucketized_column(tf.contrib.layers.real_valued_column(wind), boundaries=[0, 0.3, 0.5, 1.0, 2.0, 3.0]),
+        tf.contrib.layers.bucketized_column(tf.contrib.layers.real_valued_column(prec), boundaries=[0, 0.5, 1.0, 2.0, 3.0, 4.0])
+      ], hash_bucket_size=int(1e6)))
+
+  # Optimizers
   grad_opt = tf.train.GradientDescentOptimizer(learning_rate=0.01)
   adagrad_opt = tf.train.AdagradOptimizer(learning_rate=0.1)
   adam_opt = tf.train.AdamOptimizer(learning_rate=0.01)
   padagrad_opt = tf.train.ProximalAdagradOptimizer( learning_rate=0.1, l1_regularization_strength=0.001)
 
-  #m = tf.contrib.learn.DNNRegressor(feature_columns=feature_columns, hidden_units=[ 50, 20, 10 ])
-  #m = tf.contrib.learn.DNNRegressor(feature_columns=feature_columns, optimizer=adam_opt, hidden_units=[ 20, 10 ])
-  m = tf.contrib.learn.DNNRegressor(feature_columns=feature_columns, optimizer=adam_opt, dropout=0.15, hidden_units=[ 50, 20 ])
-  #m = tf.contrib.learn.DNNRegressor(feature_columns=feature_columns, optimizer=adam_opt, enable_centered_bias=True, hidden_units=[ 50, 20 ])
+  #m = tf.contrib.learn.DNNRegressor(feature_columns=feature_columns, optimizer=adam_opt, dropout=0.15, hidden_units=[ 50, 20 ])
+  m = tf.contrib.learn.DNNLinearCombinedRegressor(
+        linear_feature_columns=wide_columns,
+        dnn_feature_columns=deep_columns,
+        dnn_hidden_units=[ 50, 20 ])
 
   return m
 

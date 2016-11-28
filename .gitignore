@@ -92,3 +92,8 @@ ENV/
 # Real datas
 *.csv
 !raw_data.csv
+!raw_train_data.csv
+!train_data.csv
+!test_data.csv
+!predict_data.csv
+!train_data.csv

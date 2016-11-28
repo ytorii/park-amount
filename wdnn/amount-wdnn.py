@@ -16,8 +16,8 @@ def make_columns_list(name_list, num_range):
   return columns_list
       
 # precipitation = 降水量
-#CONTINUOUS_COLUMNS_NAME = [ "temp", "wind", "prec" ]
-CONTINUOUS_COLUMNS_NAME = [ "temp", "prec" ]
+CONTINUOUS_COLUMNS_NAME = [ "temp", "wind", "prec" ]
+#CONTINUOUS_COLUMNS_NAME = [ "temp", "prec" ]
 CONTINUOUS_COLUMNS_NUM = 16
 CONTINUOUS_COLUMNS = make_columns_list(CONTINUOUS_COLUMNS_NAME, CONTINUOUS_COLUMNS_NUM)
 
@@ -46,36 +46,40 @@ def build_estimator():
 
   # Inputs with real values(like 1.03, 2.3)
   for col in CONTINUOUS_COLUMNS:
+    #deep_columns.append(tf.contrib.layers.real_valued_column(col,dimension=16))
     deep_columns.append(tf.contrib.layers.real_valued_column(col))
 
   # Relevance among inputs, this shuold be derived from catagolized values.
-  for i in range(CONTINUOUS_COLUMNS_NUM):
-    temp = 'temp%s' % (i)
-    #wind = 'wind%s' % (i)
-    prec = 'prec%s' % (i)
-
-    wide_columns.append(
-      tf.contrib.layers.crossed_column([
-        tf.contrib.layers.bucketized_column(tf.contrib.layers.real_valued_column(temp), boundaries=[0, 5, 10, 15, 20, 25, 30, 35, 40]),
-        #tf.contrib.layers.bucketized_column(tf.contrib.layers.real_valued_column(wind), boundaries=[0, 0.3, 0.5, 1.0, 2.0, 3.0]),
-        tf.contrib.layers.bucketized_column(tf.contrib.layers.real_valued_column(prec), boundaries=[0, 0.5, 1.0, 2.0, 3.0, 4.0])
-      ], hash_bucket_size=int(1e6)))
+#  for i in range(CONTINUOUS_COLUMNS_NUM):
+#    temp = 'temp%s' % (i)
+#    wind = 'wind%s' % (i)
+#    prec = 'prec%s' % (i)
+#
+#    wide_columns.append(
+#      tf.contrib.layers.crossed_column([
+#        tf.contrib.layers.bucketized_column(tf.contrib.layers.real_valued_column(temp), boundaries=[0, 10, 20, 25, 35, 40]),
+#        tf.contrib.layers.bucketized_column(tf.contrib.layers.real_valued_column(wind), boundaries=[0, 0.3, 0.5, 1.0, 2.0, 3.0]),
+#        tf.contrib.layers.bucketized_column(tf.contrib.layers.real_valued_column(prec), boundaries=[0, 0.5, 1.0, 2.0, 3.0, 4.0])
+#      ], hash_bucket_size=int(1e6)))
 
   # Optimizers
   grad_opt = tf.train.GradientDescentOptimizer(learning_rate=0.01)
-  adagrad_opt = tf.train.AdagradOptimizer(learning_rate=0.1)
+  adagrad_opt = tf.train.AdagradOptimizer(learning_rate=0.01)
   adam_opt = tf.train.AdamOptimizer(learning_rate=0.01)
-  padagrad_opt = tf.train.ProximalAdagradOptimizer( learning_rate=0.1, l1_regularization_strength=0.001)
+  padagrad_opt = tf.train.ProximalAdagradOptimizer( learning_rate=0.1, l1_regularization_strength=0.001, l2_regularization_strength=0.001)
 
   #m = tf.contrib.learn.DNNRegressor(feature_columns=feature_columns, optimizer=adam_opt, dropout=0.15, hidden_units=[ 50, 20 ])
   m = tf.contrib.learn.DNNLinearCombinedRegressor(
         linear_feature_columns=wide_columns,
         dnn_feature_columns=deep_columns,
+        dnn_optimizer=adam_opt,
+        dnn_dropout=0.15,
         dnn_hidden_units=[ 50, 20 ])
 
   return m
 
 def input_fn(df):
+  #print(pd.concat([df[l] for l in df.columns[0:16].values], axis=1))
   continuous_cols = {k: tf.constant(df[k].values) for k in CONTINUOUS_COLUMNS}
   categorical_cols = {k: tf.SparseTensor(
     indices=[[i,0] for i in range(df[k].size)],
@@ -104,7 +108,7 @@ def train_and_eval():
   df_test = df_test.dropna(how='any', axis=0)
 
   model = build_estimator()
-  model.fit(input_fn=lambda: input_fn(df_train), steps=10000)
+  model.fit(input_fn=lambda: input_fn(df_train), steps=100000)
   test_results = model.evaluate(input_fn=lambda: input_fn(df_test), steps=1)
   for key in sorted(test_results):
     print("%s: %s" % (key, test_results[key]))

@@ -62,7 +62,7 @@ def build_estimator():
   adagrad_opt = tf.train.AdagradOptimizer(learning_rate=0.1)
   adam_opt = tf.train.AdamOptimizer(learning_rate=0.1)
 
-  m = tf.contrib.learn.LinearRegressor(feature_columns=feature_columns)
+  m = tf.contrib.learn.LinearRegressor(feature_columns=feature_columns, optimizer=grad_opt)
   #m = tf.contrib.learn.LinearRegressor(feature_columns=feature_columns, optimizer=adagrad_opt, model_dir="/tmp/park_amount")
   #m = tf.contrib.learn.LinearRegressor(feature_columns=feature_columns)
 
@@ -105,8 +105,12 @@ def train_and_eval():
     
   #validation_monitor = tf.contrib.learn.monitors.ValidationMonitor(input_fn=lambda: input_fn(df_test), every_n_steps=50)
   #model.fit(input_fn=lambda: input_fn(df_train), steps=10000, monitors=[validation_monitor])
+<<<<<<< HEAD
   #model.fit(input_fn=lambda: input_fn(df_train), steps=4000)
 
+=======
+  model.fit(input_fn=lambda: input_fn(df_train), steps=4000)
+>>>>>>> 56318e13f8687d5b46c9a98fc0839b94a718ee03
   results = model.evaluate(input_fn=lambda: input_fn(df_test), steps=1)
   for key in sorted(results):
     print("%s: %s" % (key, results[key]))

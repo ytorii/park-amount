@@ -111,12 +111,10 @@ def train_and_eval():
   df_test = df_test.dropna(how='any', axis=0)
 
   model = build_estimator()
-  model.fit(input_fn=lambda: input_fn(df_train), steps=10000)
+  model.fit(input_fn=lambda: input_fn(df_train), steps=100000)
   test_results = model.evaluate(input_fn=lambda: input_fn(df_test), steps=1)
   for key in sorted(test_results):
     print("%s: %s" % (key, test_results[key]))
-
-  
 
 def main(_):
   train_and_eval()

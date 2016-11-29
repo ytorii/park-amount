@@ -93,3 +93,10 @@ ENV/
 *.csv
 !raw_data.csv
 !raw_train_data.csv
+<<<<<<< HEAD
+=======
+!train_data.csv
+!test_data.csv
+!predict_data.csv
+!train_data.csv
+>>>>>>> 56318e13f8687d5b46c9a98fc0839b94a718ee03

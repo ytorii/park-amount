@@ -17,7 +17,8 @@ PREDICT_DATA_PATH = INPUT_DIR + "predict_data.csv"
 
 class WeatherDataGenerator:
 
-  CLOSED_HOURS = [ "22:00", "23:00", "0:00", "1:00", "2:00", "3:00", "4:00", "5:00" ]
+  #CLOSED_HOURS = [ "22:00", "23:00", "0:00", "1:00", "2:00", "3:00", "4:00", "5:00" ]
+  CLOSED_HOURS = [ "22:00", "23:00", "0:00", "1:00", "2:00", "3:00", "4:00", "5:00", "13:00", "14:00", "15:00", "19:00", "20:00", "21:00"  ]
 
   def __init__(self, raw_data=None, amount_data=None):
     self.weather_data = pd.DataFrame()
@@ -42,7 +43,7 @@ class WeatherDataGenerator:
     
   def __drop_closed_hours(self):
     print("Dropping closed hours columns...")
-    drop_rows = self.weather_data.loc[self.weather_data[4].isin(CLOSED_HOURS)]
+    drop_rows = self.weather_data.loc[self.weather_data[4].isin(self.CLOSED_HOURS)]
     self.weather_data.drop(drop_rows.index, inplace=True)
 
   def __store_real_values(self):

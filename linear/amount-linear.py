@@ -62,7 +62,7 @@ def build_estimator():
   adagrad_opt = tf.train.AdagradOptimizer(learning_rate=0.1)
   adam_opt = tf.train.AdamOptimizer(learning_rate=0.1)
 
-  m = tf.contrib.learn.LinearRegressor(feature_columns=feature_columns, optimizer=grad_opt)
+  m = tf.contrib.learn.LinearRegressor(feature_columns=feature_columns)
   #m = tf.contrib.learn.LinearRegressor(feature_columns=feature_columns, optimizer=adagrad_opt, model_dir="/tmp/park_amount")
   #m = tf.contrib.learn.LinearRegressor(feature_columns=feature_columns)
 
@@ -83,23 +83,30 @@ def input_fn(df):
   return feature_cols, label
 
 def train_and_eval():
-  df_train = pd.read_csv(tf.gfile.Open(TRAIN_FILENAME),
-    names=INPUT_COLUMNS,
-    skipinitialspace=True,
-    engine="python")
-
-  df_test = pd.read_csv(tf.gfile.Open(TEST_FILENAME),
-    names=INPUT_COLUMNS,
-    skipinitialspace=True,
-    engine="python")
+  df_train = pd.read_csv(tf.gfile.Open(TRAIN_FILENAME), names=INPUT_COLUMNS, skipinitialspace=True, engine="python")
+  df_test = pd.read_csv(tf.gfile.Open(TEST_FILENAME), names=INPUT_COLUMNS, skipinitialspace=True, engine="python")
 
   df_train = df_train.dropna(how='any', axis=0)
   df_test = df_test.dropna(how='any', axis=0)
 
   model = build_estimator()
+  # Should be sampled and remaked
+  feature, label = input_fn(df_train)
+  print(feature.__class__)
+  print(label.__class__)
+
+  batch_size = 100 
+  for i in range(int(df_train.shape[0] / batch_size)):
+    head = i * batch_size
+    tail = head +  batch_size - 1
+
+    model.fit(x=feature[head:tail], y=label[head:tail], steps=100)
+    #model.fit(input_fn=lambda: input_fn(df_train[head:tail]), steps=100)
+    
   #validation_monitor = tf.contrib.learn.monitors.ValidationMonitor(input_fn=lambda: input_fn(df_test), every_n_steps=50)
   #model.fit(input_fn=lambda: input_fn(df_train), steps=10000, monitors=[validation_monitor])
-  model.fit(input_fn=lambda: input_fn(df_train), steps=4000)
+  #model.fit(input_fn=lambda: input_fn(df_train), steps=4000)
+
   results = model.evaluate(input_fn=lambda: input_fn(df_test), steps=1)
   for key in sorted(results):
     print("%s: %s" % (key, results[key]))

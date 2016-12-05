@@ -81,7 +81,7 @@ def build_estimator():
 
 def input_fn(df):
   # Tensor rank should be 2 (e.g. [[1.], [2]]), so put shape as [size, 1]
-  df_size = df[k].shape[0]
+  df_size = df[CONTINUOUS_COLUMNS[0]].shape[0]
   continuous_cols = {k: tf.constant(df[k].values, shape=[df_size,1]) for k in CONTINUOUS_COLUMNS}
   categorical_cols = {k: tf.SparseTensor(
     indices=[[i,0] for i in range(df[k].size)],

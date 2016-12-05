@@ -62,7 +62,8 @@ def build_estimator():
         tf.contrib.layers.bucketized_column(tf.contrib.layers.real_valued_column(temp), boundaries=[0, 10, 20, 25, 35, 40]),
         #tf.contrib.layers.bucketized_column(tf.contrib.layers.real_valued_column(wind), boundaries=[0, 0.3, 0.5, 1.0, 2.0, 3.0]),
         tf.contrib.layers.bucketized_column(tf.contrib.layers.real_valued_column(prec), boundaries=[0, 0.5, 1.0, 2.0, 3.0, 4.0])
-      ], hash_bucket_size=int(1e6)))
+      ], hash_bucket_size=int(1e6),
+      hash_key=tf.contrib.layers.SPARSE_FEATURE_CROSS_DEFAULT_HASH_KEY))
 
   # Optimizers
   grad_opt = tf.train.GradientDescentOptimizer(learning_rate=0.01)

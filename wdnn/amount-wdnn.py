@@ -16,8 +16,8 @@ def make_columns_list(name_list, num_range):
   return columns_list
       
 # precipitation = 降水量
-#CONTINUOUS_COLUMNS_NAME = [ "temp", "wind", "prec" ]
-CONTINUOUS_COLUMNS_NAME = [ "temp", "prec" ]
+CONTINUOUS_COLUMNS_NAME = [ "temp", "wind", "prec" ]
+#CONTINUOUS_COLUMNS_NAME = [ "temp", "prec" ]
 CONTINUOUS_COLUMNS_NUM = 10
 CONTINUOUS_COLUMNS = make_columns_list(CONTINUOUS_COLUMNS_NAME, CONTINUOUS_COLUMNS_NUM)
 
@@ -48,19 +48,19 @@ def build_estimator():
 
   # Inputs with real values(like 1.03, 2.3)
   for col in CONTINUOUS_COLUMNS:
-    deep_columns.append(tf.contrib.layers.real_valued_column(col,dimension=3))
+    deep_columns.append(tf.contrib.layers.real_valued_column(col))
     #deep_columns.append(tf.contrib.layers.real_valued_column(col, dimension=2))
 
   # Relevance among inputs, this shuold be derived from catagolized values.
   for i in range(CONTINUOUS_COLUMNS_NUM):
     temp = 'temp%s' % (i)
-    #wind = 'wind%s' % (i)
+    wind = 'wind%s' % (i)
     prec = 'prec%s' % (i)
 
     wide_columns.append(
       tf.contrib.layers.crossed_column([
         tf.contrib.layers.bucketized_column(tf.contrib.layers.real_valued_column(temp), boundaries=[0, 10, 20, 25, 35, 40]),
-        #tf.contrib.layers.bucketized_column(tf.contrib.layers.real_valued_column(wind), boundaries=[0, 0.3, 0.5, 1.0, 2.0, 3.0]),
+        tf.contrib.layers.bucketized_column(tf.contrib.layers.real_valued_column(wind), boundaries=[0, 0.3, 0.5, 1.0, 2.0, 3.0]),
         tf.contrib.layers.bucketized_column(tf.contrib.layers.real_valued_column(prec), boundaries=[0, 0.5, 1.0, 2.0, 3.0, 4.0])
       ], hash_bucket_size=int(1e6),
       hash_key=tf.contrib.layers.SPARSE_FEATURE_CROSS_DEFAULT_HASH_KEY))
@@ -76,7 +76,8 @@ def build_estimator():
         linear_feature_columns=wide_columns,
         dnn_feature_columns=deep_columns,
         dnn_optimizer=adam_opt,
-        dnn_hidden_units=[ 30, 50, 1 ])
+        #dnn_hidden_units=[ 30, 50, 1 ])
+        dnn_hidden_units=[ 256, 256, 1 ])
 
   return m
 
@@ -115,6 +116,7 @@ def train_and_eval():
   df_test = df_test.dropna(how='any', axis=0)
 
   model = build_estimator()
+  #model.fit(input_fn=lambda: input_fn(df_train), steps=10000)
   model.fit(input_fn=lambda: input_fn(df_train), steps=10000)
   test_results = model.evaluate(input_fn=lambda: input_fn(df_test), steps=1)
   for key in sorted(test_results):

@@ -1,5 +1,6 @@
 import pandas as pd
 import tensorflow as tf
+from scipy.stats import zscore
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -49,6 +50,7 @@ def build_estimator():
   # Inputs with real values(like 1.03, 2.3)
   for col in CONTINUOUS_COLUMNS:
     deep_columns.append(tf.contrib.layers.real_valued_column(col))
+    #deep_columns.append(tf.contrib.layers.real_valued_column(col, normalizer=lambda x: zscore(x)))
     #deep_columns.append(tf.contrib.layers.real_valued_column(col, dimension=2))
 
   # Relevance among inputs, this shuold be derived from catagolized values.
@@ -76,7 +78,7 @@ def build_estimator():
         linear_feature_columns=wide_columns,
         dnn_feature_columns=deep_columns,
         dnn_optimizer=adam_opt,
-        #dnn_hidden_units=[ 30, 50, 1 ])
+#        dnn_hidden_units=[ 50, 30, 1 ])
         dnn_hidden_units=[ 256, 256, 1 ])
 
   return m
@@ -84,7 +86,8 @@ def build_estimator():
 def input_fn(df):
   # Tensor rank should be 2 (e.g. [[1.], [2]]), so put shape as [size, 1]
   df_size = df[CONTINUOUS_COLUMNS[0]].shape[0]
-  continuous_cols = {k: tf.constant(df[k].values, shape=[df_size,1]) for k in CONTINUOUS_COLUMNS}
+  #continuous_cols = {k: tf.constant(df[k].values, shape=[df_size,1]) for k in CONTINUOUS_COLUMNS}
+  continuous_cols = {k: tf.constant(zscore(df[k].values), shape=[df_size,1]) for k in CONTINUOUS_COLUMNS}
   categorical_cols = {k: tf.SparseTensor(
     indices=[[i,0] for i in range(df[k].size)],
     values=df[k].values.astype(str),
@@ -102,7 +105,7 @@ def input_fn(df):
 def train_and_eval():
   df_train = pd.read_csv(tf.gfile.Open(TRAIN_FILENAME),
     names=INPUT_COLUMNS,
-    #dtype=tf.float64
+    #dtype=tf.float64,
     skipinitialspace=True,
     engine="python")
 
@@ -116,8 +119,11 @@ def train_and_eval():
   df_test = df_test.dropna(how='any', axis=0)
 
   model = build_estimator()
-  #model.fit(input_fn=lambda: input_fn(df_train), steps=10000)
-  model.fit(input_fn=lambda: input_fn(df_train), steps=10000)
+
+  batch_size = 50 
+  for _ in range(batch_size):
+    model.fit(input_fn=lambda: input_fn(df_train.sample(n=batch_size)), steps=1000)
+
   test_results = model.evaluate(input_fn=lambda: input_fn(df_test), steps=1)
   for key in sorted(test_results):
     print("%s: %s" % (key, test_results[key]))

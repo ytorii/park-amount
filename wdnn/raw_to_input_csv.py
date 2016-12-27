@@ -3,8 +3,6 @@ from datetime import datetime as dt
 import numpy as np
 import pandas as pd
 
-TEST_PERCENTAGE = 0.1
-
 RAW_DIR = "raw/"
 RAW_TRAIN_PATH = RAW_DIR + "raw_train_data.csv"
 RAW_PREDICT_PATH = RAW_DIR + "raw_predict_data.csv"
@@ -14,6 +12,11 @@ INPUT_DIR = "input/"
 TRAIN_DATA_PATH = INPUT_DIR + "train_data.csv"
 TEST_DATA_PATH = INPUT_DIR + "test_data.csv"
 PREDICT_DATA_PATH = INPUT_DIR + "predict_data.csv"
+
+TEST_PERCENTAGE = 0.1
+
+AMOUNT_LOW_LIMIT = 80
+AMOUNT_HIGH_LIMIT = 180
 
 class WeatherDataGenerator:
 
@@ -32,6 +35,7 @@ class WeatherDataGenerator:
     self.__pivot_date_x_hour()
     self.__store_categolized_values()
     self.__store_label_values()
+    self.__drop_invalid_label_values()
 
   def get_data(self):
     return self.weather_data
@@ -83,6 +87,15 @@ class WeatherDataGenerator:
       print("Appending label values...")
       self.weather_data[7] = self.amount_data[0]
 
+  def __drop_invalid_label_values(self):
+    print("Dropping invalid label values...")
+    #if self.weather_data[7] is None:
+    if self.amount_data is None:
+      print("Skipping dropping invalid label values...")
+    else:
+      drop_rows = self.weather_data[(AMOUNT_LOW_LIMIT <= self.weather_data[7]) & (self.weather_data[7] <= AMOUNT_HIGH_LIMIT)]
+      self.weather_data.drop(drop_rows.index, inplace=True)
+
 def read_raw_data():
   print("Reading weather and cycle amount data...")
   # Adding 0 - 3 numbers as header names.
@@ -101,22 +114,30 @@ def make_train_test_data(weather_df):
   return train_df, test_df
 
 def raw_to_weather():
+  print('*********************************')
   print('Generating train and test data...')
+  print('*********************************')
   raw_train_data_df, raw_predict_data_df, amount_data_df = read_raw_data()
   train_data_generator = WeatherDataGenerator(raw_train_data_df, amount_data_df)
   train_data_generator.generate_data()
   train_df, test_df = make_train_test_data(train_data_generator.get_data())
 
+  print('*********************************')
   print('Saving train and test data...')
+  print('*********************************')
   train_df.to_csv(TRAIN_DATA_PATH, header=None)
   test_df.to_csv(TEST_DATA_PATH, header=None)
 
+  print('*********************************')
   print('Generating predict data...')
+  print('*********************************')
   predict_data_generator = WeatherDataGenerator(raw_predict_data_df)
   predict_data_generator.generate_data()
   predict_df = predict_data_generator.get_data()
 
+  print('*********************************')
   print('Saving predict data...')
+  print('*********************************')
   predict_df.to_csv(PREDICT_DATA_PATH, header=None)
 
 def run():

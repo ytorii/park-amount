@@ -79,15 +79,15 @@ def build_estimator():
         dnn_feature_columns=deep_columns,
         dnn_optimizer=adam_opt,
 #        dnn_hidden_units=[ 50, 30, 1 ])
-        dnn_hidden_units=[ 256, 256, 1 ])
+        dnn_hidden_units=[ 30, 240, 30 ])
 
   return m
 
 def input_fn(df):
   # Tensor rank should be 2 (e.g. [[1.], [2]]), so put shape as [size, 1]
   df_size = df[CONTINUOUS_COLUMNS[0]].shape[0]
-  #continuous_cols = {k: tf.constant(df[k].values, shape=[df_size,1]) for k in CONTINUOUS_COLUMNS}
-  continuous_cols = {k: tf.constant(zscore(df[k].values), shape=[df_size,1]) for k in CONTINUOUS_COLUMNS}
+  continuous_cols = {k: tf.constant(df[k].values, shape=[df_size,1]) for k in CONTINUOUS_COLUMNS}
+  #continuous_cols = {k: tf.constant(zscore(df[k].values), shape=[df_size,1]) for k in CONTINUOUS_COLUMNS}
   categorical_cols = {k: tf.SparseTensor(
     indices=[[i,0] for i in range(df[k].size)],
     values=df[k].values.astype(str),
@@ -122,7 +122,7 @@ def train_and_eval():
 
   batch_size = 50 
   for _ in range(batch_size):
-    model.fit(input_fn=lambda: input_fn(df_train.sample(n=batch_size)), steps=1000)
+    model.fit(input_fn=lambda: input_fn(df_train.sample(n=batch_size)), steps=100)
 
   test_results = model.evaluate(input_fn=lambda: input_fn(df_test), steps=1)
   for key in sorted(test_results):
